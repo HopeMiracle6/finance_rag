@@ -115,10 +115,6 @@ RAG 评估问题也应尽量和 QLoRA 训练样本区分。如果评估问题直
                    -> 返回答案 + 文件名 + 页码 + chunk_id
 ```
 
-面试中可以这样解释：
-
-> 我把中文金融公告任务拆成“模型能力适配”和“外部知识检索”两层。第一个项目用约 500 条巨潮资讯网公告构造 instruction 数据，对 Qwen3-4B 做 QLoRA 微调，让模型更熟悉公告摘要、财务指标解释、风险提示和拒答格式。第二个项目不把数据继续当训练集，而是把巨潮公告、定期报告和投资者关系记录表解析成 RAG 知识库，通过 chunk、BM25 + Dense 混合召回、reranker 和引用溯源完成材料内问答。两个项目的连接点是：RAG 系统可以调用第一个项目微调得到的 QLoRA adapter 作为生成器，同时答案依据仍来自可追溯的检索证据，从而兼顾领域表达能力和事实可溯源性。
-
 ## 当前实现状态
 
 当前项目二已经接入巨潮资讯网公开 PDF 作为 RAG 知识库，不再只使用示例 TXT。已验证的一版本地知识库规模如下：
@@ -249,7 +245,7 @@ python scripts/ask_local_qlora.py \
 
 建议统一使用同一批 `eval_questions.jsonl`，对比格式遵循率、引用存在率、拒答准确率、关键词覆盖率和证据命中率。
 
-## outputs 展示产物
+## outputs 运行产物
 
 每次调用 `RAGPipeline.ask()` 后，系统会自动追加保存：
 
@@ -259,7 +255,7 @@ python scripts/ask_local_qlora.py \
 - `outputs/eval_report.json` / `outputs/eval_report.md`：由 `scripts/evaluate_rag.py` 生成的本地规则评估报告。
 - `outputs/ablation_results.csv`：由 `scripts/build_ablation_results.py` 实际运行生成的消融实验表。
 
-生成展示产物：
+生成运行产物：
 
 ```bash
 python scripts/build_citation_report.py
@@ -288,7 +284,7 @@ python scripts/build_ablation_results.py `
 | with_reranker | Dense + BGE reranker + Qwen3-4B | 0.2500 | 0.2500 | 0.3000 | 0.2500 | 20.5848s |
 | with_lora | Dense + BGE reranker + QLoRA | 0.5000 | 0.5000 | 0.3000 | 0.5000 | 40.1921s |
 
-说明：这组实验基于 `outputs/sample_questions.jsonl` 中的 4 条样例问题，适合项目展示和面试说明；如果要做更严谨的结论，应扩展到 30-100 条评测问题后复跑同一脚本。
+说明：这组实验基于 `outputs/sample_questions.jsonl` 中的 4 条样例问题；如果要做更严谨的结论，应扩展到 30-100 条评测问题后复跑同一脚本。
 
 ## 实验结果表格占位
 
@@ -311,7 +307,3 @@ python scripts/build_ablation_results.py `
 2. 支持长文档多跳问答。
 3. 支持更严格的事实一致性评测。
 4. 支持 Agent 工具调用。
-
-## 简历展示口径
-
-中文金融公告/研报 RAG 问答与引用溯源系统：面向中文上市公司公告、财报摘要和研报片段，构建支持文档解析、chunk 切分、BM25 + Dense 混合召回、reranker 重排、答案引用溯源和自动评测的 RAG 问答系统。设计材料内问答、摘要归纳、信息抽取、材料外拒答和投资建议拒答等测试集，对比 BM25、Dense、Hybrid、Hybrid + Reranker 在 Recall@K、MRR、引用准确率和拒答准确率上的表现，并通过 Streamlit Demo 展示问答结果、证据片段和检索排序。
