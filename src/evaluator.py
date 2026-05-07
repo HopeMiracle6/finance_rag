@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.rag_pipeline import RAGPipeline
+from src.reranker import Reranker
 from src.schema import EvalQuestion, RetrievalResult
 from src.utils import ensure_dir, read_jsonl
 
@@ -49,14 +50,15 @@ def evaluate_retrieval_method(
     metrics = {"Recall@1": 0.0, "Recall@3": 0.0, "Recall@5": 0.0, "Recall@10": 0.0, "MRR": 0.0}
     for question in valid_questions:
         if method == "hybrid_reranker":
-            answer = pipeline.ask(
-                question.question,
-                retrieval_mode="hybrid",
-                use_reranker=True,
-                top_k=top_k,
-                final_top_n=final_top_n,
+            results = pipeline.retrieve(question.question, retrieval_mode="hybrid", top_k=top_k)
+            reranker_cfg = pipeline.config.get("reranker", {})
+            reranker = Reranker(
+                model_name=reranker_cfg.get("model_name", "BAAI/bge-reranker-v2-m3"),
+                fallback_model_name=reranker_cfg.get("fallback_model_name", "BAAI/bge-reranker-base"),
+                device=reranker_cfg.get("device", "auto"),
+                enabled=reranker_cfg.get("enabled", True),
             )
-            results = answer.citations
+            results = reranker.rerank(question.question, results, top_n=final_top_n)
         else:
             results = pipeline.retrieve(question.question, retrieval_mode=method, top_k=top_k)
         metrics["Recall@1"] += recall_at_k(results, question.gold_chunk_ids, 1)

@@ -9,7 +9,7 @@ paths:
   chunks_path: data/processed/chunks.jsonl
   bm25_corpus_path: data/processed/bm25_corpus.json
   bm25_index_path: data/indexes/bm25.pkl
-  chroma_persist_dir: D:/finance_rag_chroma
+  chroma_persist_dir: data/indexes/chroma
 
 chunking:
   chunk_size: 800

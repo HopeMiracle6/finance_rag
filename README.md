@@ -72,48 +72,6 @@ python scripts/ask.py \
 {"chunk_id":"...","doc_id":"...","source_file":"sample_announcement.txt","page":null,"section_title":"二、业绩变动主要原因","text":"...","token_count":256,"metadata":{}}
 ```
 
-## 两个项目的数据关系
-
-本项目和“中文金融公告 QLoRA 微调项目”可以使用同一个公开数据来源，但两者的数据形态和用途不同。
-
-项目一是中文金融公告 QLoRA 微调项目。数据主要来自巨潮资讯网公开披露的上市公司公告和定期报告，规模约 500 条。它会把公告内容加工成 `instruction / input / output` 格式的监督微调样本，用于让模型适应中文金融公告问答、摘要、指标解释、风险提示等任务。
-
-项目二是本仓库的中文金融公告/研报 RAG 问答与引用溯源系统。它同样可以使用巨潮资讯网公告、年报、半年报、季度报告、临时公告、风险提示公告、投资者关系活动记录表等公开资料，但这些资料在本项目中不是训练数据，而是 RAG 知识库数据。处理流程是 PDF 解析、文本清洗、chunk 切分、embedding 向量化、向量库索引、Top-K 检索、答案生成和引用溯源。
-
-第二个项目的知识库以巨潮资讯网公开公告、年报、半年报、投资者关系活动记录表为主体。知识库可以包含第一个 QLoRA 项目涉及的部分原始文档，同时也可以额外扩展新的 PDF 文档，用于检索、问答和引用溯源。
-
-两者的关键区别：
-
-| 项目 | 数据来源 | 数据形态 | 数据用途 | 是否训练模型 |
-|---|---|---|---|---|
-| QLoRA 微调项目 | 巨潮资讯网公告和定期报告 | `instruction / input / output` 样本 | 监督微调生成模型 | 是 |
-| RAG 问答与引用溯源系统 | 巨潮资讯网公告、年报、半年报、投资者关系活动记录表等原始文档 | PDF、解析文本、chunks、向量索引 | 构建可检索知识库 | 否 |
-
-可以复用的是项目一下载过的原始公告 PDF 或原始公告文本；不建议直接把项目一构造好的 `instruction / input / output` 训练样本作为 RAG 知识库主体。原因是 instruction 数据已经经过任务化改写，可能丢失原始页码、上下文和披露来源，不利于引用溯源。
-
-RAG 评估问题也应尽量和 QLoRA 训练样本区分。如果评估问题直接复用训练问题，模型可能依靠微调记忆回答，导致无法真实衡量检索、引用和材料外拒答能力。
-
-两个项目的连接方式是：本 RAG 系统可以把项目一微调后的 QLoRA 模型作为答案生成器，但检索证据仍来自本项目构建的知识库。
-
-```text
-同一公开数据来源：巨潮资讯网公告 / 定期报告 / 投资者关系活动记录表
-        |
-        +--> 项目一：QLoRA 微调项目
-        |       原始公告文本
-        |          -> instruction / input / output
-        |          -> Qwen3-4B + LoRA adapter
-        |          -> 得到领域生成模型
-        |
-        +--> 项目二：RAG 问答与引用溯源系统
-                原始 PDF / 原始文本
-                   -> PDF 解析
-                   -> 文本清洗
-                   -> chunk 切分
-                   -> BM25 / Dense / Hybrid 索引
-                   -> Top-K 检索 + reranker
-                   -> 调用 Base Model 或项目一 QLoRA 模型生成答案
-                   -> 返回答案 + 文件名 + 页码 + chunk_id
-```
 
 ## 当前实现状态
 
@@ -193,9 +151,9 @@ python scripts/evaluate_rag.py
 报告输出到：
 
 - `outputs/retrieval_report.md`
-- `outputs/rag_eval_report.md`
+- `outputs/eval_report.md`
 
-## 如何接入第一个项目训练得到的 QLoRA 模型
+## 如何接入训练得到的 QLoRA 模型
 
 默认配置已经把生成器切到本地 QLoRA：
 
@@ -245,7 +203,7 @@ python scripts/ask_local_qlora.py \
 
 建议统一使用同一批 `eval_questions.jsonl`，对比格式遵循率、引用存在率、拒答准确率、关键词覆盖率和证据命中率。
 
-## outputs 运行产物
+## outputs 展示产物
 
 每次调用 `RAGPipeline.ask()` 后，系统会自动追加保存：
 
@@ -255,7 +213,7 @@ python scripts/ask_local_qlora.py \
 - `outputs/eval_report.json` / `outputs/eval_report.md`：由 `scripts/evaluate_rag.py` 生成的本地规则评估报告。
 - `outputs/ablation_results.csv`：由 `scripts/build_ablation_results.py` 实际运行生成的消融实验表。
 
-生成运行产物：
+生成展示产物：
 
 ```bash
 python scripts/build_citation_report.py
@@ -263,12 +221,11 @@ python scripts/evaluate_rag.py
 python scripts/build_ablation_results.py
 ```
 
-`ablation_results.csv` 由脚本实际逐题调用 RAG Pipeline 生成，当前三组设置为：向量检索 + Qwen3-4B、向量检索 + BGE reranker + Qwen3-4B、向量检索 + BGE reranker + QLoRA 微调模型。逐题明细保存在 `outputs/ablation_details.jsonl`，用于查看每个问题的回答、引用来源、耗时和规则评估指标。
+`ablation_results.csv` 由脚本实际逐题调用 RAG Pipeline 生成，当前三组设置为：向量检索 + Qwen3-4B、向量检索 + reranker + Qwen3-4B、向量检索 + reranker + QLoRA 微调模型。逐题明细保存在 `outputs/ablation_details.jsonl`，用于查看每个问题的回答、引用来源、耗时和规则评估指标。
 
 真实消融实验命令：
 
 ```powershell
-$env:FINANCE_RAG_ALLOW_MODEL_DOWNLOAD="1"
 python scripts/build_ablation_results.py `
   --generator local `
   --top-k 30 `
@@ -280,20 +237,20 @@ python scripts/build_ablation_results.py `
 
 | setting | 模型链路 | Faithfulness | Answer Relevancy | Context Precision | Context Recall | Avg Latency |
 |---|---|---:|---:|---:|---:|---:|
-| baseline | Dense + Qwen3-4B | 0.0000 | 0.1250 | 0.3000 | 0.0833 | 14.2619s |
-| with_reranker | Dense + BGE reranker + Qwen3-4B | 0.2500 | 0.2500 | 0.3000 | 0.2500 | 20.5848s |
-| with_lora | Dense + BGE reranker + QLoRA | 0.5000 | 0.5000 | 0.3000 | 0.5000 | 40.1921s |
+| baseline | Dense(simple_hash fallback) + Qwen3-4B | 0.0000 | 0.0646 | 0.1000 | 0.0000 | 18.7035s |
+| with_reranker | Dense(simple_hash fallback) + keyword reranker + Qwen3-4B | 0.0333 | 0.0896 | 0.1150 | 0.0417 | 10.9209s |
+| with_lora | Dense(simple_hash fallback) + keyword reranker + QLoRA | 0.1125 | 0.1125 | 0.1150 | 0.1417 | 29.5828s |
 
-说明：这组实验基于 `outputs/sample_questions.jsonl` 中的 4 条样例问题；如果要做更严谨的结论，应扩展到 30-100 条评测问题后复跑同一脚本。
+说明：这组实验基于 `outputs/sample_questions.jsonl` 中的 40 条样例问题。当前环境中 `BAAI/bge-m3` 因 torch 版本限制未加载，Dense 使用 `simple_hash` fallback；reranker 本地模型不存在，使用 `keyword_overlap` fallback。
 
-## 实验结果表格占位
+## 检索评测结果
 
 | Method | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR |
 |---|---:|---:|---:|---:|---:|
-| BM25 | 待运行 | 待运行 | 待运行 | 待运行 | 待运行 |
-| Dense | 待运行 | 待运行 | 待运行 | 待运行 | 待运行 |
-| Hybrid | 待运行 | 待运行 | 待运行 | 待运行 | 待运行 |
-| Hybrid + Reranker | 待运行 | 待运行 | 待运行 | 待运行 | 待运行 |
+| BM25 | 0.2917 | 0.4167 | 0.5278 | 0.7222 | 0.4473 |
+| Dense | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| Hybrid | 0.2778 | 0.3750 | 0.4167 | 0.5278 | 0.3845 |
+| Hybrid + Reranker | 0.4306 | 0.5833 | 0.7222 | 0.7778 | 0.5753 |
 
 ## Bad Case 分析占位
 

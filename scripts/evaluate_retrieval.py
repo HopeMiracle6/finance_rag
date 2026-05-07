@@ -28,7 +28,7 @@ def main() -> None:
     questions_path = resolve_path(eval_config["paths"]["questions_path"])
     ensure_eval_questions(questions_path)
     questions = load_eval_questions(questions_path)
-    pipeline = RAGPipeline(config_path=args.config)
+    pipeline = RAGPipeline(config_path=args.config, load_llm=False)
 
     rows = []
     for method in ["bm25", "dense", "hybrid", "hybrid_reranker"]:

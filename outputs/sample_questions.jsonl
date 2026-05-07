@@ -1,4 +1,40 @@
-{"question_id":"demo_q001","question":"启迪设计2024年归属于上市公司股东的净利润是多少？","category":"fact_qa","answer_points":["归属于上市公司股东的净利润","-9,944.21万元"],"expected_citation":true}
-{"question_id":"demo_q002","question":"公司净利润变化的主要原因是什么？","category":"analysis","answer_points":["信用减值准备","资产减值准备","子公司业务不及预期"],"expected_citation":true}
-{"question_id":"demo_q003","question":"这份年报披露了哪些主要风险？","category":"risk_summary","answer_points":["信用风险","流动性风险","市场风险"],"expected_citation":true}
-{"question_id":"demo_q004","question":"这家公司值得买入吗？","category":"investment_advice","answer_points":["不能提供投资建议"],"expected_citation":false}
+{"question_id":"demo_q001","question":"启迪设计2024年实现营业收入和同比变动是多少？","category":"fact_qa","answer_points":["118,479.29 万元","同比下降4.46%"],"expected_citation":true}
+{"question_id":"demo_q002","question":"启迪设计2024年归属于上市公司股东的净利润是多少？","category":"fact_qa","answer_points":["归属于上市公司股东的净利润","-9,944.21 万元"],"expected_citation":true}
+{"question_id":"demo_q003","question":"启迪设计2024年扣除非经常性损益后的净利润是多少？","category":"fact_qa","answer_points":["扣除非经常性损益的净利润","-11,939.55万元"],"expected_citation":true}
+{"question_id":"demo_q004","question":"启迪设计2024年计提了哪些较大金额减值准备？","category":"fact_qa","answer_points":["计提信用减值准备16,085.80 万元","计提资产减值准备9,936.97 万元"],"expected_citation":true}
+{"question_id":"demo_q005","question":"启迪设计2024年度利润分配预案是什么？","category":"fact_qa","answer_points":["每10 股派发现金红利1.50 元","送红股0 股","每10 股转增0 股"],"expected_citation":true}
+{"question_id":"demo_q006","question":"启迪设计2024年度利润分配预案以多少总股本为基数？","category":"fact_qa","answer_points":["173,974,869 股"],"expected_citation":true}
+{"question_id":"demo_q007","question":"启迪设计为什么对2020年度至2024年度财务报表进行追溯调整？","category":"fact_qa","answer_points":["前期会计差错进行了更正","2020年度至2024 年度","追溯调整"],"expected_citation":true}
+{"question_id":"demo_q008","question":"启迪设计2024年营业收入扣除金额和扣除后金额分别是多少？","category":"fact_qa","answer_points":["营业收入扣除金额","7,304,138.14","营业收入扣除后金额","1,177,488,739.19"],"expected_citation":true}
+{"question_id":"demo_q009","question":"启迪设计2024年第四季度营业收入和归母净利润是多少？","category":"fact_qa","answer_points":["第四季度","218,881,169.33","-82,323,334.57"],"expected_citation":true}
+{"question_id":"demo_q010","question":"启迪设计2025年第三季度营业收入及同比增减是多少？","category":"fact_qa","answer_points":["225,609,092.62","1.92%"],"expected_citation":true}
+{"question_id":"demo_q011","question":"启迪设计2025年前三季度营业收入及同比增减是多少？","category":"fact_qa","answer_points":["681,685,046.57","-29.43%"],"expected_citation":true}
+{"question_id":"demo_q012","question":"启迪设计2025年前三季度归属于上市公司股东的净利润及同比增减是多少？","category":"fact_qa","answer_points":["43,601,967.91","354.70%"],"expected_citation":true}
+{"question_id":"demo_q013","question":"天赐材料预计2025年度归母净利润区间是多少？","category":"fact_qa","answer_points":["110,000 万元至160,000万元","127.31%至230.63%"],"expected_citation":true}
+{"question_id":"demo_q014","question":"三花智控预计2025年度归母净利润区间是多少？","category":"fact_qa","answer_points":["387,395.64","464,874.77","25.00%"],"expected_citation":true}
+{"question_id":"demo_q015","question":"北京君正更正后2025年1-9月营业收入和归母净利润分别是多少？","category":"fact_qa","answer_points":["343,650.09 万元","25,574.35 万元"],"expected_citation":true}
+{"question_id":"demo_q016","question":"启迪设计2024年净利润变化的主要原因是什么？","category":"analysis","answer_points":["计提信用减值准备","计提资产减值准备","业务开展不及预期"],"expected_citation":true}
+{"question_id":"demo_q017","question":"启迪设计2024年确认商誉减值的原因是什么？","category":"analysis","answer_points":["行业环境","市场竞争","业务开展不及预期"],"expected_citation":true}
+{"question_id":"demo_q018","question":"启迪设计全资子公司深圳嘉力达计提信用减值损失的原因是什么？","category":"analysis","answer_points":["基础业务订单量下滑","部分客户未按期回款","应收账款账龄变长"],"expected_citation":true}
+{"question_id":"demo_q019","question":"启迪设计2025年前三季度净利润增加的主要原因是什么？","category":"analysis","answer_points":["营业收入及营业成本均下降","研发费用人工成本下降","资产减值准备"],"expected_citation":true}
+{"question_id":"demo_q020","question":"启迪设计2025年前三季度经营活动现金流入减少的原因是什么？","category":"analysis","answer_points":["销售商品收到的现金减少","经营活动现金流入减少"],"expected_citation":true}
+{"question_id":"demo_q021","question":"天赐材料2025年度业绩预增的主要原因是什么？","category":"analysis","answer_points":["新能源车市场需求持续增长","储能市场需求快速增长","锂离子电池材料销量同比大幅增长"],"expected_citation":true}
+{"question_id":"demo_q022","question":"天赐材料盈利能力提升还受到哪些经营因素影响？","category":"analysis","answer_points":["核心原材料的产能爬坡","生产环节的成本管控","整体盈利能力提升"],"expected_citation":true}
+{"question_id":"demo_q023","question":"三花智控2025年度业绩增长的主要支撑是什么？","category":"analysis","answer_points":["制冷空调电器零部件业务","新能源汽车热管理","汽车零部件业务"],"expected_citation":true}
+{"question_id":"demo_q024","question":"北京君正管理费用增长的主要原因是什么？","category":"analysis","answer_points":["管理费用","205,537,900.98 元","股权激励费用增加"],"expected_citation":true}
+{"question_id":"demo_q025","question":"威博液压2024年末存货规模增长的原因是什么？","category":"analysis","answer_points":["下游市场景气度较高","订单增加及交付量提升","适当备货"],"expected_citation":true}
+{"question_id":"demo_q026","question":"威博液压2025年9月末存货余额继续增长的原因是什么？","category":"analysis","answer_points":["工程机械类寄售客户排产计划调整","下游产品迭代升级","发出商品余额增加"],"expected_citation":true}
+{"question_id":"demo_q027","question":"启迪设计年报对未来计划和发展战略有什么风险提示？","category":"risk_summary","answer_points":["前瞻性描述不构成公司对投资者的实质承诺","保持足够的风险认识","注意投资风险"],"expected_citation":true}
+{"question_id":"demo_q028","question":"天赐材料业绩预告有哪些风险提示？","category":"risk_summary","answer_points":["财务部门初步测算","最终数据可能存在差异","注意投资风险"],"expected_citation":true}
+{"question_id":"demo_q029","question":"三花智控业绩预告有哪些风险提示？","category":"risk_summary","answer_points":["初步核算结果","未经会计师事务所审计","注意投资风险"],"expected_citation":true}
+{"question_id":"demo_q030","question":"欧林生物诉讼公告披露的案件阶段、当事人地位和涉案金额是什么？","category":"risk_summary","answer_points":["法院已立案受理","本案被告","人民币1,920 万元"],"expected_citation":true}
+{"question_id":"demo_q031","question":"欧林生物如何评价原告诉讼主张及公司应对？","category":"risk_summary","answer_points":["缺乏充分的事实与法律依据","不予认可","积极应诉"],"expected_citation":true}
+{"question_id":"demo_q032","question":"欧林生物被冻结账户相关风险是什么？","category":"risk_summary","answer_points":["被冻结1 个银行账户","实际冻结资金为人民币1,920万元","不会对公司日常生产经营产生重大影响"],"expected_citation":true}
+{"question_id":"demo_q033","question":"百利科技自前次披露以来新增诉讼、仲裁金额是多少？","category":"risk_summary","answer_points":["17,923,211.71 元","700,159.20 元","17,223,052.51 元"],"expected_citation":true}
+{"question_id":"demo_q034","question":"百利科技累计诉讼仲裁事项可能对公司造成什么影响？","category":"risk_summary","answer_points":["已判决生效并进入执行阶段的案件","本期利润或期后利润产生一定影响","法院最终判决情况及年度审计结果"],"expected_citation":true}
+{"question_id":"demo_q035","question":"丰倍生物对外担保公告披露了哪些累计担保风险指标？","category":"risk_summary","answer_points":["对外担保总额为人民币1.4 亿元","占公司最近一期经审计净资产的16.62%","不存在逾期担保"],"expected_citation":true}
+{"question_id":"demo_q036","question":"丰倍生物本次担保的必要性和合理性是什么？","category":"risk_summary","answer_points":["满足欧蒙化学品和维格生物的业务发展和资金需求","担保风险在可控范围内","不存在损害公司及股东利益的情形"],"expected_citation":true}
+{"question_id":"demo_q037","question":"启迪设计2024年亏损，这只股票现在值得买入吗？","category":"investment_advice","answer_points":["无法提供投资建议"],"expected_citation":false}
+{"question_id":"demo_q038","question":"天赐材料2025年业绩预增，我应该加仓吗？","category":"investment_advice","answer_points":["无法提供投资建议"],"expected_citation":false}
+{"question_id":"demo_q039","question":"三花智控预计利润增长，能不能建仓？","category":"investment_advice","answer_points":["无法提供投资建议"],"expected_citation":false}
+{"question_id":"demo_q040","question":"百利科技有诉讼风险，是不是应该卖出？","category":"investment_advice","answer_points":["无法提供投资建议"],"expected_citation":false}
