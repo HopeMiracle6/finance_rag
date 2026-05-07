@@ -8,7 +8,7 @@
 
 1. 文档解析：读取 `PDF / TXT / Markdown`，PDF 按页生成 `RawDocument`。
 2. 文本处理：保留金融关键数字、日期、金额、百分比，清理明显空白和页码噪声。
-3. Chunk：按标题、段落、句子、固定窗口逐级切分，并保留 `doc_id / source_file / page / chunk_id / section_title`。
+3. Chunk：按整份 PDF 连续文档流切分，支持跨页 overlap，并保留 `doc_id / source_file / page_start / page_end / chunk_id / section_title`。
 4. 检索：BM25 使用 `jieba + rank_bm25`，Dense 使用 `sentence-transformers + Chroma`，无本地模型时走 deterministic fallback embedding。
 5. 融合：Hybrid 默认使用 Reciprocal Rank Fusion。
 6. 重排：优先使用 `FlagEmbedding` reranker；无本地模型时走关键词重排 fallback。
@@ -119,6 +119,26 @@ RAG 评估问题也应尽量和 QLoRA 训练样本区分。如果评估问题直
 
 > 我把中文金融公告任务拆成“模型能力适配”和“外部知识检索”两层。第一个项目用约 500 条巨潮资讯网公告构造 instruction 数据，对 Qwen3-4B 做 QLoRA 微调，让模型更熟悉公告摘要、财务指标解释、风险提示和拒答格式。第二个项目不把数据继续当训练集，而是把巨潮公告、定期报告和投资者关系记录表解析成 RAG 知识库，通过 chunk、BM25 + Dense 混合召回、reranker 和引用溯源完成材料内问答。两个项目的连接点是：RAG 系统可以调用第一个项目微调得到的 QLoRA adapter 作为生成器，同时答案依据仍来自可追溯的检索证据，从而兼顾领域表达能力和事实可溯源性。
 
+## 当前实现状态
+
+当前项目二已经接入巨潮资讯网公开 PDF 作为 RAG 知识库，不再只使用示例 TXT。已验证的一版本地知识库规模如下：
+
+| 项目 | 数量 |
+|---|---:|
+| 巨潮公告/报告 PDF | 497 |
+| 解析页数 | 4,165 |
+| 文档级 chunks | 6,777 |
+| 跨页 chunks | 3,459 |
+| 异常大跨度页码 | 0 |
+
+切分方式已经从“每页单独切分”改为“整份 PDF 连续切分”。系统会在解析时保留页码标记，切分后为每个 chunk 记录 `page_start/page_end`，因此回答引用可以展示 `91-92` 这类页码范围，适合年报、半年报和投资者关系记录表这类跨页长文档。
+
+由于 Windows OneDrive + 中文长路径下 Chroma/SQLite 可能出现 `disk I/O error`，当前推荐把 Chroma 向量库放在纯英文路径：
+
+```yaml
+chroma_persist_dir: D:/finance_rag_chroma
+```
+
 ## 构建索引
 
 ```bash
@@ -128,7 +148,9 @@ python scripts/build_bm25_index.py \
 
 python scripts/build_dense_index.py \
   --chunks data/processed/chunks.jsonl \
-  --persist-dir data/indexes/chroma
+  --persist-dir D:/finance_rag_chroma \
+  --embedding-model BAAI/bge-m3 \
+  --chroma-batch-size 512
 ```
 
 ## 命令行问答
@@ -246,6 +268,27 @@ python scripts/build_ablation_results.py
 ```
 
 `ablation_results.csv` 由脚本实际逐题调用 RAG Pipeline 生成，当前三组设置为：向量检索 + Qwen3-4B、向量检索 + BGE reranker + Qwen3-4B、向量检索 + BGE reranker + QLoRA 微调模型。逐题明细保存在 `outputs/ablation_details.jsonl`，用于查看每个问题的回答、引用来源、耗时和规则评估指标。
+
+真实消融实验命令：
+
+```powershell
+$env:FINANCE_RAG_ALLOW_MODEL_DOWNLOAD="1"
+python scripts/build_ablation_results.py `
+  --generator local `
+  --top-k 30 `
+  --final-top-n 5 `
+  --max-tokens 512
+```
+
+当前真实实验结果：
+
+| setting | 模型链路 | Faithfulness | Answer Relevancy | Context Precision | Context Recall | Avg Latency |
+|---|---|---:|---:|---:|---:|---:|
+| baseline | Dense + Qwen3-4B | 0.0000 | 0.1250 | 0.3000 | 0.0833 | 14.2619s |
+| with_reranker | Dense + BGE reranker + Qwen3-4B | 0.2500 | 0.2500 | 0.3000 | 0.2500 | 20.5848s |
+| with_lora | Dense + BGE reranker + QLoRA | 0.5000 | 0.5000 | 0.3000 | 0.5000 | 40.1921s |
+
+说明：这组实验基于 `outputs/sample_questions.jsonl` 中的 4 条样例问题，适合项目展示和面试说明；如果要做更严谨的结论，应扩展到 30-100 条评测问题后复跑同一脚本。
 
 ## 实验结果表格占位
 
