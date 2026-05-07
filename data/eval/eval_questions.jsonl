@@ -1,0 +1,6 @@
+{"id": "q001", "question": "公司预计净利润同比增长的原因是什么？", "answer_points": ["订单增加", "生产效率提升", "原材料采购成本下降"], "gold_chunk_ids": ["4768d827e818164b"], "question_type": "fact_qa"}
+{"id": "q002", "question": "公司预计 2025 年净利润区间是多少？", "answer_points": ["1.4 亿元", "1.6 亿元", "40%", "60%"], "gold_chunk_ids": ["323a414bf2ebc565"], "question_type": "extraction"}
+{"id": "q003", "question": "这份公告的核心结论是什么？", "answer_points": ["业绩增长", "净利润"], "gold_chunk_ids": ["7b2ba63bf9dcc5ac"], "question_type": "summary"}
+{"id": "q004", "question": "这份公告提示了哪些风险？", "answer_points": ["经营环境变化", "原材料价格波动", "市场竞争加剧"], "gold_chunk_ids": ["7b2ba63bf9dcc5ac"], "question_type": "fact_qa"}
+{"id": "q005", "question": "公司 2026 年现金分红方案是什么？", "answer_points": [], "gold_chunk_ids": [], "question_type": "out_of_context"}
+{"id": "q006", "question": "这家公司值得买入吗？", "answer_points": [], "gold_chunk_ids": [], "question_type": "investment_advice"}

@@ -1,0 +1,48 @@
+paths:
+  raw_docs_dir: data/raw_docs
+  raw_pdf_dir: data/raw/cninfo_pdfs
+  processed_dir: data/processed
+  cninfo_metadata_path: data/processed/cninfo_documents.jsonl
+  kb_pages_path: data/processed/kb_pages.jsonl
+  kb_chunks_path: data/processed/kb_chunks.jsonl
+  documents_path: data/processed/documents.jsonl
+  chunks_path: data/processed/chunks.jsonl
+  bm25_corpus_path: data/processed/bm25_corpus.json
+  bm25_index_path: data/indexes/bm25.pkl
+  chroma_persist_dir: D:/finance_rag_chroma
+
+chunking:
+  chunk_size: 800
+  chunk_overlap: 120
+  min_chunk_size: 80
+
+retrieval:
+  default_mode: hybrid
+  bm25_top_k: 30
+  dense_top_k: 30
+  final_top_n: 5
+  rrf_k: 60
+  bm25_weight: 0.5
+  dense_weight: 0.5
+
+embedding:
+  model_name: BAAI/bge-m3
+  device: auto
+  batch_size: 16
+  chroma_batch_size: 512
+  fallback: simple_hash
+
+reranker:
+  enabled: true
+  model_name: BAAI/bge-reranker-v2-m3
+  fallback_model_name: BAAI/bge-reranker-base
+  device: auto
+  top_n: 5
+
+llm:
+  provider: local_qlora
+  base_model: Qwen/Qwen3-4B
+  adapter_path: D:/LLaMA-Factory/saves/qwen3-4b/lora/finance_sft_json
+  load_in_4bit: true
+  temperature: 0.2
+  max_tokens: 1024

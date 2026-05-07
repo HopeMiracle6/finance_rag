@@ -1,0 +1,13 @@
+﻿question_id,setting,category,retrieval_mode,use_reranker,use_lora,latency_seconds
+demo_q001,baseline,fact_qa,dense,False,False,15.7793
+demo_q002,baseline,analysis,dense,False,False,10.3339
+demo_q003,baseline,risk_summary,dense,False,False,25.7296
+demo_q004,baseline,investment_advice,dense,False,False,5.2049
+demo_q001,with_reranker,fact_qa,dense,True,False,22.6365
+demo_q002,with_reranker,analysis,dense,True,False,24.6437
+demo_q003,with_reranker,risk_summary,dense,True,False,26.1949
+demo_q004,with_reranker,investment_advice,dense,True,False,8.864
+demo_q001,with_lora,fact_qa,dense,True,True,26.4956
+demo_q002,with_lora,analysis,dense,True,True,23.536
+demo_q003,with_lora,risk_summary,dense,True,True,61.635
+demo_q004,with_lora,investment_advice,dense,True,True,49.102

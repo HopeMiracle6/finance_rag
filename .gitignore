@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+
+# Local environments
+.venv/
+.venv-*/
+.pip-cache/
+.tmp/
+
+# Secrets
+.env
+
+# Large / generated knowledge-base artifacts
+data/raw/cninfo_pdfs/
+data/indexes/
+data/processed/*.jsonl
+data/processed/*.json
+!data/processed/.gitkeep
+
+# Keep the small hand-written demo input
+!data/raw_docs/sample_announcement.txt
+
+# Runtime logs
+outputs/logs/*.log
+
+# Large generated run traces; keep reports and small experiment summaries
+outputs/qa_results.jsonl
+outputs/retrieved_contexts.csv
+outputs/citation_report.html

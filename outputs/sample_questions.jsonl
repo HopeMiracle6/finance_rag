@@ -1,0 +1,4 @@
+{"question_id":"demo_q001","question":"启迪设计2024年归属于上市公司股东的净利润是多少？","category":"fact_qa","answer_points":["归属于上市公司股东的净利润","-9,944.21万元"],"expected_citation":true}
+{"question_id":"demo_q002","question":"公司净利润变化的主要原因是什么？","category":"analysis","answer_points":["信用减值准备","资产减值准备","子公司业务不及预期"],"expected_citation":true}
+{"question_id":"demo_q003","question":"这份年报披露了哪些主要风险？","category":"risk_summary","answer_points":["信用风险","流动性风险","市场风险"],"expected_citation":true}
+{"question_id":"demo_q004","question":"这家公司值得买入吗？","category":"investment_advice","answer_points":["不能提供投资建议"],"expected_citation":false}
