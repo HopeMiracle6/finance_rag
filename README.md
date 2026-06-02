@@ -33,18 +33,29 @@ finance-rag-assistant/
 
 ## 安装方法
 
-```bash
+### 1. 激活 conda 环境（推荐）
+
+```powershell
+conda activate finance_rag
+```
+
+环境路径：`D:\Anaconda\envs\finance_rag`，已预装本项目所需依赖。
+
+也可自行创建：
+
+```powershell
+conda create -n finance_rag python=3.11 -y
+conda activate finance_rag
 pip install -r requirements.txt
 ```
 
 如需真实下载 BGE embedding / reranker 模型，设置：
 
-```bash
-set FINANCE_RAG_ALLOW_MODEL_DOWNLOAD=1
+```powershell
+$env:FINANCE_RAG_ALLOW_MODEL_DOWNLOAD="1"
 ```
 
 默认不主动下载模型，避免本地无网络时卡住；会使用 fallback embedding / reranker 跑通 MVP。
-
 ## 快速开始
 
 ```bash
@@ -241,16 +252,18 @@ python scripts/build_ablation_results.py `
 | with_reranker | Dense(simple_hash fallback) + keyword reranker + Qwen3-4B | 0.0333 | 0.0896 | 0.1150 | 0.0417 | 10.9209s |
 | with_lora | Dense(simple_hash fallback) + keyword reranker + QLoRA | 0.1125 | 0.1125 | 0.1150 | 0.1417 | 29.5828s |
 
-说明：这组实验基于 `outputs/sample_questions.jsonl` 中的 40 条样例问题。当前环境中 `BAAI/bge-m3` 因 torch 版本限制未加载，Dense 使用 `simple_hash` fallback；reranker 本地模型不存在，使用 `keyword_overlap` fallback。
+说明：上表消融结果基于 `outputs/sample_questions.jsonl` 中的 40 条样例问题，仍是前次 fallback 环境结果：Dense 使用 `simple_hash` fallback，reranker 使用 `keyword_overlap` fallback。
 
 ## 检索评测结果
+
+说明：下表检索评测使用 `finance_rag` 环境复跑，`BAAI/bge-m3` 已通过 `sentence_transformers` 加载，reranker 使用本地 `D:\models\bge-reranker-v2-m3` 并通过 `FlagEmbedding` 加载。由于 Chroma 在 OneDrive 目录下仍出现 `disk I/O error`，Dense 查询实际使用新重建的本地 JSON 向量索引 fallback。
 
 | Method | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR |
 |---|---:|---:|---:|---:|---:|
 | BM25 | 0.2917 | 0.4167 | 0.5278 | 0.7222 | 0.4473 |
-| Dense | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| Hybrid | 0.2778 | 0.3750 | 0.4167 | 0.5278 | 0.3845 |
-| Hybrid + Reranker | 0.4306 | 0.5833 | 0.7222 | 0.7778 | 0.5753 |
+| Dense | 0.4306 | 0.5556 | 0.6389 | 0.8056 | 0.5637 |
+| Hybrid | 0.5139 | 0.6944 | 0.7500 | 0.8472 | 0.6619 |
+| Hybrid + Reranker | 0.5694 | 0.8333 | 0.8750 | 0.9167 | 0.7378 |
 
 ## Bad Case 分析占位
 
