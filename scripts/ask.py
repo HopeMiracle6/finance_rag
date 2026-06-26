@@ -4,6 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.rag_pipeline import RAGPipeline
@@ -31,6 +34,14 @@ def main() -> None:
 
     print(f"问题：{answer.question}\n")
     print(f"回答：\n{answer.answer}\n")
+    generation = answer.metadata.get("generation", {})
+    print(
+        "生成后端："
+        f"{generation.get('actual_provider')} / {generation.get('actual_model')} / "
+        f"{generation.get('backend')} / fallback={generation.get('fallback_used')}"
+    )
+    if generation.get("request_id"):
+        print(f"request_id：{generation['request_id']}")
     print("引用来源：")
     if not answer.citations:
         print("- 无")

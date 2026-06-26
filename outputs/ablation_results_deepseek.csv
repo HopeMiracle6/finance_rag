@@ -1,0 +1,4 @@
+﻿setting,top_k,generator,use_reranker,generator_model,question_count,faithfulness,answer_relevancy,context_precision,context_recall,average_latency_seconds
+dense,30,deepseek,False,deepseek-v4-pro,40,0.675,0.7021,0.3,0.7167,4.1142
+dense_reranker,30,deepseek,True,deepseek-v4-pro,40,0.7646,0.7729,0.365,0.8688,4.7683
+hybrid_reranker,30,deepseek,True,deepseek-v4-pro,40,0.7729,0.7812,0.365,0.8438,4.4654

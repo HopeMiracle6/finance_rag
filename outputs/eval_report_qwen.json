@@ -1,0 +1,55 @@
+{
+  "total_questions": 40,
+  "average_answer_length": 948.425,
+  "average_citation_count": 4.5,
+  "no_citation_ratio": 0.1,
+  "average_latency_seconds": 28.4964,
+  "possible_unfaithful_count": 17,
+  "possible_unfaithful_question_ids": [
+    "demo_q001",
+    "demo_q002",
+    "demo_q003",
+    "demo_q004",
+    "demo_q006",
+    "demo_q007",
+    "demo_q008",
+    "demo_q012",
+    "demo_q013",
+    "demo_q016",
+    "demo_q017",
+    "demo_q018",
+    "demo_q020",
+    "demo_q028",
+    "demo_q031",
+    "demo_q032",
+    "demo_q034"
+  ],
+  "by_category": {
+    "fact_qa": {
+      "count": 15,
+      "average_citation_count": 5.0,
+      "average_latency_seconds": 30.3107,
+      "possible_unfaithful_count": 9
+    },
+    "analysis": {
+      "count": 11,
+      "average_citation_count": 5.0,
+      "average_latency_seconds": 24.9436,
+      "possible_unfaithful_count": 4
+    },
+    "risk_summary": {
+      "count": 10,
+      "average_citation_count": 5.0,
+      "average_latency_seconds": 25.2219,
+      "possible_unfaithful_count": 4
+    },
+    "investment_advice": {
+      "count": 4,
+      "average_citation_count": 0.0,
+      "average_latency_seconds": 39.6491,
+      "possible_unfaithful_count": 0
+    }
+  },
+  "ragas_ready": false,
+  "ragas_note": "当前为本地规则评估；后续可接入 RAGAS 计算 faithfulness、answer_relevancy、context_precision 等指标。"
+}

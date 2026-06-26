@@ -19,6 +19,12 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 
 
 def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(project_root() / ".env", override=False)
+    except ImportError:
+        pass
     config = load_yaml(path)
     apply_env_overrides(config)
     return config
@@ -33,6 +39,28 @@ def apply_env_overrides(config: dict[str, Any]) -> None:
         config.setdefault("reranker", {})["model_name"] = os.environ["RERANKER_MODEL"]
     if os.getenv("LLM_MODEL"):
         config.setdefault("llm", {})["model"] = os.environ["LLM_MODEL"]
+    if os.getenv("DEEPSEEK_MODEL"):
+        config.setdefault("llm", {})["model"] = os.environ["DEEPSEEK_MODEL"]
+    if os.getenv("DEEPSEEK_BASE_URL"):
+        config.setdefault("llm", {})["base_url"] = os.environ["DEEPSEEK_BASE_URL"]
+    if os.getenv("DEEPSEEK_REASONING_EFFORT"):
+        config.setdefault("llm", {})["reasoning_effort"] = os.environ["DEEPSEEK_REASONING_EFFORT"]
+    if os.getenv("DEEPSEEK_THINKING"):
+        config.setdefault("llm", {})["thinking_enabled"] = os.environ["DEEPSEEK_THINKING"].lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+            "on",
+        }
+    if os.getenv("LLM_STRICT"):
+        config.setdefault("llm", {})["strict"] = os.environ["LLM_STRICT"].lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+            "on",
+        }
     if os.getenv("QLORA_BASE_MODEL"):
         config.setdefault("llm", {})["base_model"] = os.environ["QLORA_BASE_MODEL"]
     if os.getenv("QLORA_ADAPTER_PATH"):

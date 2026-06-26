@@ -32,11 +32,18 @@ def _as_simple_metadata(chunk: TextChunk) -> dict[str, str | int | float | bool]
 
 
 class EmbeddingBackend:
-    def __init__(self, model_name: str = "BAAI/bge-m3", device: str = "auto", batch_size: int = 16) -> None:
+    def __init__(
+        self,
+        model_name: str = "BAAI/bge-m3",
+        device: str = "auto",
+        batch_size: int = 16,
+        allow_fallback: bool = False,
+    ) -> None:
         self.model_name = model_name
         self.device = None if device == "auto" else device
         self.batch_size = batch_size
-        self.backend = "simple_hash"
+        self.allow_fallback = allow_fallback
+        self.backend = "unloaded"
         self.model: Any = None
         self.dim = 384
         self._load_model()
@@ -61,7 +68,10 @@ class EmbeddingBackend:
             self.dim = int(dim) if dim else self.dim
             logger.info(f"已加载 embedding 模型: {self.model_name}")
         except Exception as exc:
+            if not self.allow_fallback:
+                raise RuntimeError(f"embedding 模型加载失败，且已禁用 fallback: {self.model_name}") from exc
             logger.warning(f"embedding 模型加载失败，使用 simple_hash fallback: {exc}")
+            self.backend = "simple_hash"
         finally:
             if local_only and old_offline is None:
                 os.environ.pop("HF_HUB_OFFLINE", None)
@@ -102,12 +112,18 @@ class DenseRetriever:
         batch_size: int = 16,
         chroma_batch_size: int = 512,
         collection_name: str = "finance_chunks",
+        allow_embedding_fallback: bool = False,
     ) -> None:
         self.persist_dir = Path(persist_dir)
         ensure_dir(self.persist_dir)
         self.collection_name = collection_name
         self.chroma_batch_size = max(1, int(chroma_batch_size))
-        self.embedder = EmbeddingBackend(embedding_model_name, device=device, batch_size=batch_size)
+        self.embedder = EmbeddingBackend(
+            embedding_model_name,
+            device=device,
+            batch_size=batch_size,
+            allow_fallback=allow_embedding_fallback,
+        )
         self.client: Any = None
         self.collection: Any = None
         self.memory_chunks: list[TextChunk] = []

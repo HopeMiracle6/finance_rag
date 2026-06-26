@@ -90,6 +90,8 @@ class LocalQLoRAClient:
         else:
             input_ids = inputs.to(device) if hasattr(inputs, "to") else inputs
             model_inputs = {"input_ids": input_ids}
+        if "attention_mask" not in model_inputs and hasattr(input_ids, "new_ones"):
+            model_inputs["attention_mask"] = input_ids.new_ones(input_ids.shape)
 
         do_sample = self.temperature > 0
         generation_kwargs: dict[str, Any] = {

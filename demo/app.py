@@ -41,6 +41,7 @@ def rebuild_indexes(config: dict) -> tuple[int, int]:
         device=emb_cfg.get("device", "auto"),
         batch_size=emb_cfg.get("batch_size", 16),
         chroma_batch_size=emb_cfg.get("chroma_batch_size", 512),
+        allow_embedding_fallback=emb_cfg.get("allow_fallback", False),
     )
     dense.build_index(chunks)
     st.cache_resource.clear()

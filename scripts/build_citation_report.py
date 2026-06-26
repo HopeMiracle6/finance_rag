@@ -18,7 +18,7 @@ def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
     file_path = Path(path)
     if not file_path.exists():
         return records
-    with file_path.open("r", encoding="utf-8") as f:
+    with file_path.open("r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
             if line:

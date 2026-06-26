@@ -23,7 +23,7 @@ def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
     if not file_path.exists():
         return []
     records: list[dict[str, Any]] = []
-    with file_path.open("r", encoding="utf-8") as f:
+    with file_path.open("r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -49,7 +49,8 @@ def is_refusal_answer(answer: str) -> bool:
 
 
 def extract_claim_tokens(question: str, answer: str) -> set[str]:
-    tokens = {item.strip() for item in NUMBER_RE.findall(answer) if item.strip()}
+    answer_body = answer.split("引用来源：", 1)[0]
+    tokens = {item.strip() for item in NUMBER_RE.findall(answer_body) if item.strip()}
     tokens.update(item.strip() for item in ENTITY_RE.findall(question) if item.strip())
     return {token for token in tokens if len(token) >= 2}
 
@@ -66,7 +67,8 @@ def is_possible_unfaithful(record: dict[str, Any]) -> bool:
     tokens = extract_claim_tokens(record.get("question", ""), answer)
     if not tokens:
         return False
-    missing = [token for token in tokens if token not in evidence]
+    normalized_evidence = re.sub(r"[\s,，]", "", evidence)
+    missing = [token for token in tokens if re.sub(r"[\s,，]", "", token) not in normalized_evidence]
     return bool(missing)
 
 
@@ -153,9 +155,12 @@ def main() -> None:
     parser.add_argument("--sample-questions", default="outputs/sample_questions.jsonl")
     parser.add_argument("--json-output", default="outputs/eval_report.json")
     parser.add_argument("--md-output", default="outputs/eval_report.md")
+    parser.add_argument("--setting", default=None)
     args = parser.parse_args()
 
     qa_results = load_jsonl(resolve_path(args.qa_results))
+    if args.setting:
+        qa_results = [item for item in qa_results if item.get("setting") == args.setting]
     samples = load_jsonl(resolve_path(args.sample_questions))
     metrics = evaluate(qa_results, samples)
     write_json_report(resolve_path(args.json_output), metrics)

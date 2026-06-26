@@ -6,10 +6,10 @@ paths:
   kb_pages_path: data/processed/kb_pages.jsonl
   kb_chunks_path: data/processed/kb_chunks.jsonl
   documents_path: data/processed/documents.jsonl
-  chunks_path: data/processed/chunks.jsonl
+  chunks_path: data/processed/kb_chunks.jsonl
   bm25_corpus_path: data/processed/bm25_corpus.json
   bm25_index_path: data/indexes/bm25.pkl
-  chroma_persist_dir: data/indexes/chroma
+  chroma_persist_dir: C:/Users/MIRACL~1/AppData/Local/Temp/finance_rag_chroma
 
 chunking:
   chunk_size: 800
@@ -30,17 +30,22 @@ embedding:
   device: auto
   batch_size: 16
   chroma_batch_size: 512
-  fallback: simple_hash
+  allow_fallback: false
 
 reranker:
   enabled: true
-  model_name: BAAI/bge-reranker-v2-m3
-  fallback_model_name: BAAI/bge-reranker-base
+  model_name: D:/models/bge-reranker-v2-m3
+  fallback_model_name: D:/models/bge-reranker-v2-m3
   device: auto
   top_n: 5
+  allow_fallback: false
 
 llm:
-  provider: local_qlora
+  provider: deepseek
+  base_url: https://api.deepseek.com
+  model: deepseek-v4-pro
+  strict: true
+  thinking_enabled: false
   base_model: Qwen/Qwen3-4B
   adapter_path: D:/LLaMA-Factory/saves/qwen3-4b/lora/finance_sft_json
   load_in_4bit: true

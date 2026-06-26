@@ -46,6 +46,7 @@ def save_qa_result(
     embedding_model: str,
     reranker_model: str,
     generator_model: str,
+    generation: dict[str, Any],
     latency_seconds: float,
     created_at: str | None = None,
     output_path: str | Path | None = None,
@@ -62,6 +63,7 @@ def save_qa_result(
         "embedding_model": embedding_model,
         "reranker_model": reranker_model,
         "generator_model": generator_model,
+        "generation": generation,
         "latency_seconds": round(float(latency_seconds), 4),
         "created_at": created_at or datetime.now().isoformat(timespec="seconds"),
     }

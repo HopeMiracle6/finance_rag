@@ -57,6 +57,7 @@ def evaluate_retrieval_method(
                 fallback_model_name=reranker_cfg.get("fallback_model_name", "BAAI/bge-reranker-base"),
                 device=reranker_cfg.get("device", "auto"),
                 enabled=reranker_cfg.get("enabled", True),
+                allow_fallback=reranker_cfg.get("allow_fallback", False),
             )
             results = reranker.rerank(question.question, results, top_n=final_top_n)
         else:

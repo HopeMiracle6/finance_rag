@@ -4,7 +4,6 @@ import argparse
 import csv
 import gc
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -20,9 +19,9 @@ from src.utils import ensure_dir, format_page_range
 
 
 SETTINGS = {
-    "baseline": {"retrieval_mode": "dense", "use_reranker": False, "use_lora": False},
-    "with_reranker": {"retrieval_mode": "dense", "use_reranker": True, "use_lora": False},
-    "with_lora": {"retrieval_mode": "dense", "use_reranker": True, "use_lora": True},
+    "dense": {"retrieval_mode": "dense", "use_reranker": False},
+    "dense_reranker": {"retrieval_mode": "dense", "use_reranker": True},
+    "hybrid_reranker": {"retrieval_mode": "hybrid", "use_reranker": True},
 }
 
 
@@ -59,6 +58,10 @@ def evidence_point_score(evidence: str, answer_points: list[str]) -> float:
     return hits / len(answer_points)
 
 
+def citation_text(item: Any) -> str:
+    return str(item.get("text", "")) if isinstance(item, dict) else str(item.text)
+
+
 def context_precision(citations: list, answer_points: list[str]) -> float:
     if not citations:
         return 0.0
@@ -66,7 +69,7 @@ def context_precision(citations: list, answer_points: list[str]) -> float:
         return 1.0
     scored = 0
     for item in citations:
-        text = normalize_text(item.text)
+        text = normalize_text(citation_text(item))
         if any(normalize_text(point) in text for point in answer_points):
             scored += 1
     return scored / len(citations)
@@ -75,23 +78,24 @@ def context_precision(citations: list, answer_points: list[str]) -> float:
 def refusal_score(answer: str) -> float:
     normalized = normalize_text(answer)
     refusal_terms = ["不能提供投资建议", "无法提供", "不构成投资建议", "拒绝", "只能做材料解读"]
-    return 1.0 if any(normalize_text(term) in normalized for term in refusal_terms) else 0.0
+    explicit_refusal = "不能提供" in normalized and "投资建议" in normalized
+    return 1.0 if explicit_refusal or any(normalize_text(term) in normalized for term in refusal_terms) else 0.0
 
 
-def evaluate_answer(answer: RAGAnswer, sample: dict[str, Any]) -> dict[str, float]:
+def evaluate_text(answer_text: str, citations: list, sample: dict[str, Any]) -> dict[str, float]:
     category = sample.get("category") or sample.get("question_type") or "unknown"
     answer_points = sample.get("answer_points") or []
-    evidence = "\n".join(item.text for item in answer.citations)
+    evidence = "\n".join(citation_text(item) for item in citations)
     if category == "investment_advice":
-        faithfulness = refusal_score(answer.answer)
+        faithfulness = refusal_score(answer_text)
         relevancy = faithfulness
-        precision = 1.0 if not answer.citations else 0.0
+        precision = 1.0 if not citations else 0.0
         recall = faithfulness
     else:
-        relevancy = answer_point_score(answer.answer, answer_points)
+        relevancy = answer_point_score(answer_text, answer_points)
         recall = evidence_point_score(evidence, answer_points)
-        precision = context_precision(answer.citations, answer_points)
-        faithfulness = min(relevancy, recall) if answer_points else (1.0 if answer.citations else 0.0)
+        precision = context_precision(citations, answer_points)
+        faithfulness = min(relevancy, recall) if answer_points else (1.0 if citations else 0.0)
     return {
         "faithfulness": round(float(faithfulness), 4),
         "answer_relevancy": round(float(relevancy), 4),
@@ -100,31 +104,41 @@ def evaluate_answer(answer: RAGAnswer, sample: dict[str, Any]) -> dict[str, floa
     }
 
 
-def configure_llm(pipeline: RAGPipeline, use_lora: bool, generator: str, max_tokens: int) -> str:
+def evaluate_answer(answer: RAGAnswer, sample: dict[str, Any]) -> dict[str, float]:
+    return evaluate_text(answer.answer, answer.citations, sample)
+
+
+def configure_llm(pipeline: RAGPipeline, generator: str, max_tokens: int) -> str:
     if generator == "mock":
-        pipeline.llm = LLMClient(provider="openai_compatible", api_key=None, max_tokens=max_tokens)
+        pipeline.llm = LLMClient(provider="mock", max_tokens=max_tokens, strict=False)
         return "mock"
 
     llm_cfg = pipeline.config.get("llm", {})
-    base_model = llm_cfg.get("base_model", "Qwen/Qwen3-4B")
-    adapter_path = llm_cfg.get("adapter_path") if use_lora else None
-    old_adapter_env = os.environ.pop("QLORA_ADAPTER_PATH", None) if not use_lora else None
-    try:
+    if generator == "deepseek":
         pipeline.llm = LLMClient(
-            provider="local_qlora",
-            base_model=base_model,
-            adapter_path=adapter_path,
-            load_in_4bit=llm_cfg.get("load_in_4bit", True),
+            provider="deepseek",
+            base_url=llm_cfg.get("base_url"),
+            model=llm_cfg.get("model", "deepseek-v4-pro"),
             temperature=llm_cfg.get("temperature", 0.2),
             max_tokens=max_tokens,
+            strict=True,
+            reasoning_effort=llm_cfg.get("reasoning_effort"),
+            thinking_enabled=llm_cfg.get("thinking_enabled", False),
         )
-    finally:
-        if old_adapter_env is not None:
-            os.environ["QLORA_ADAPTER_PATH"] = old_adapter_env
+        return str(llm_cfg.get("model", "deepseek-v4-pro"))
 
-    local_client = getattr(pipeline.llm, "local_client", None)
-    if local_client is None:
-        return "mock_fallback"
+    base_model = llm_cfg.get("base_model", "Qwen/Qwen3-4B")
+    adapter_path = llm_cfg.get("adapter_path")
+    pipeline.llm = LLMClient(
+        provider="local_qlora",
+        base_model=base_model,
+        adapter_path=adapter_path,
+        load_in_4bit=llm_cfg.get("load_in_4bit", True),
+        temperature=llm_cfg.get("temperature", 0.2),
+        max_tokens=max_tokens,
+        strict=True,
+    )
+
     return f"{base_model}+{adapter_path}" if adapter_path else base_model
 
 
@@ -157,7 +171,7 @@ def run_setting(
     max_tokens: int,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     pipeline = RAGPipeline(config_path=config_path, load_bm25=False, load_dense=True, load_llm=False)
-    generator_model = configure_llm(pipeline, use_lora=setting["use_lora"], generator=generator, max_tokens=max_tokens)
+    generator_model = configure_llm(pipeline, generator=generator, max_tokens=max_tokens)
     details: list[dict[str, Any]] = []
 
     for sample in samples:
@@ -167,8 +181,11 @@ def run_setting(
             use_reranker=setting["use_reranker"],
             top_k=top_k,
             final_top_n=final_top_n,
+            persist_outputs=False,
         )
         metrics = evaluate_answer(answer, sample)
+        generation = answer.metadata.get("generation", {})
+        actual_generator = generation.get("actual_model") or generator_model
         details.append(
             {
                 "setting": setting_name,
@@ -176,12 +193,16 @@ def run_setting(
                 "category": sample.get("category") or sample.get("question_type") or "unknown",
                 "question": sample["question"],
                 "answer": answer.answer,
+                "generator": generator,
+                "generator_model": actual_generator,
+                "generation": generation,
                 "citations": [
                     {
                         "file_name": item.source_file,
                         "page": format_page_range(item.page, item.page_start, item.page_end),
                         "chunk_id": item.chunk_id,
                         "score": item.score,
+                        "text": item.text,
                     }
                     for item in answer.citations
                 ],
@@ -191,12 +212,13 @@ def run_setting(
         )
 
     count = max(1, len(details))
+    actual_generators = sorted({str(item["generator_model"]) for item in details})
     summary = {
         "setting": setting_name,
         "top_k": top_k,
+        "generator": generator,
         "use_reranker": setting["use_reranker"],
-        "use_lora": setting["use_lora"],
-        "generator_model": generator_model,
+        "generator_model": ",".join(actual_generators) if actual_generators else generator_model,
         "question_count": len(details),
         "faithfulness": round(sum(item["faithfulness"] for item in details) / count, 4),
         "answer_relevancy": round(sum(item["answer_relevancy"] for item in details) / count, 4),
@@ -214,8 +236,8 @@ def write_summary(path: str | Path, rows: list[dict[str, Any]]) -> None:
     fieldnames = [
         "setting",
         "top_k",
+        "generator",
         "use_reranker",
-        "use_lora",
         "generator_model",
         "question_count",
         "faithfulness",
@@ -241,7 +263,7 @@ def write_details(path: str | Path, rows: list[dict[str, Any]]) -> None:
 def write_latency_report(path: str | Path, rows: list[dict[str, Any]]) -> None:
     target = Path(path)
     ensure_dir(target.parent)
-    fieldnames = ["question_id", "setting", "category", "retrieval_mode", "use_reranker", "use_lora", "latency_seconds"]
+    fieldnames = ["question_id", "setting", "generator", "category", "retrieval_mode", "use_reranker", "latency_seconds"]
     with target.open("w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -251,10 +273,10 @@ def write_latency_report(path: str | Path, rows: list[dict[str, Any]]) -> None:
                 {
                     "question_id": row.get("question_id"),
                     "setting": row.get("setting"),
+                    "generator": row.get("generator"),
                     "category": row.get("category"),
                     "retrieval_mode": setting["retrieval_mode"],
                     "use_reranker": setting["use_reranker"],
-                    "use_lora": setting["use_lora"],
                     "latency_seconds": row.get("latency_seconds"),
                 }
             )
@@ -264,21 +286,62 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/rag_config.yaml")
     parser.add_argument("--sample-questions", default="outputs/sample_questions.jsonl")
-    parser.add_argument("--output", default="outputs/ablation_results.csv")
-    parser.add_argument("--details-output", default="outputs/ablation_details.jsonl")
-    parser.add_argument("--latency-output", default="outputs/latency_report.csv")
-    parser.add_argument("--settings", default="baseline,with_reranker,with_lora")
-    parser.add_argument("--generator", choices=["local", "mock"], default="local")
+    parser.add_argument("--output", default=None)
+    parser.add_argument("--details-output", default=None)
+    parser.add_argument("--latency-output", default=None)
+    parser.add_argument("--settings", default="dense,dense_reranker,hybrid_reranker")
+    parser.add_argument("--generator", choices=["qwen", "deepseek", "mock"], default="qwen")
     parser.add_argument("--top-k", type=int, default=30)
     parser.add_argument("--final-top-n", type=int, default=5)
     parser.add_argument("--max-tokens", type=int, default=512)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--recompute-details", default=None)
     args = parser.parse_args()
+    output_path = args.output or f"outputs/ablation_results_{args.generator}.csv"
+    details_output_path = args.details_output or f"outputs/ablation_details_{args.generator}.jsonl"
+    latency_output_path = args.latency_output or f"outputs/latency_report_{args.generator}.csv"
 
     samples = load_jsonl(resolve_path(args.sample_questions))
     if args.limit is not None:
         samples = samples[: args.limit]
     selected_settings = [item.strip() for item in args.settings.split(",") if item.strip()]
+
+    if args.recompute_details:
+        sample_map = {str(item.get("question_id") or item.get("id")): item for item in samples}
+        details = load_jsonl(resolve_path(args.recompute_details))
+        for row in details:
+            sample = sample_map.get(str(row.get("question_id")))
+            if sample:
+                row.update(evaluate_text(str(row.get("answer", "")), row.get("citations") or [], sample))
+        summaries = []
+        for setting_name in selected_settings:
+            setting_details = [row for row in details if row.get("setting") == setting_name]
+            if not setting_details:
+                continue
+            count = len(setting_details)
+            models = sorted({str(row.get("generator_model", "")) for row in setting_details})
+            summaries.append(
+                {
+                    "setting": setting_name,
+                    "top_k": args.top_k,
+                    "generator": args.generator,
+                    "use_reranker": SETTINGS[setting_name]["use_reranker"],
+                    "generator_model": ",".join(models),
+                    "question_count": count,
+                    "faithfulness": round(sum(row["faithfulness"] for row in setting_details) / count, 4),
+                    "answer_relevancy": round(sum(row["answer_relevancy"] for row in setting_details) / count, 4),
+                    "context_precision": round(sum(row["context_precision"] for row in setting_details) / count, 4),
+                    "context_recall": round(sum(row["context_recall"] for row in setting_details) / count, 4),
+                    "average_latency_seconds": round(
+                        sum(float(row["latency_seconds"]) for row in setting_details) / count,
+                        4,
+                    ),
+                }
+            )
+        write_summary(resolve_path(output_path), summaries)
+        write_details(resolve_path(details_output_path), details)
+        write_latency_report(resolve_path(latency_output_path), details)
+        return
 
     summaries: list[dict[str, Any]] = []
     details: list[dict[str, Any]] = []
@@ -299,12 +362,12 @@ def main() -> None:
         details.extend(setting_details)
         print(f"finished {setting_name}: {summary}")
 
-    write_summary(resolve_path(args.output), summaries)
-    write_details(resolve_path(args.details_output), details)
-    write_latency_report(resolve_path(args.latency_output), details)
-    print(f"ablation results saved: {resolve_path(args.output)}")
-    print(f"ablation details saved: {resolve_path(args.details_output)}")
-    print(f"latency report saved: {resolve_path(args.latency_output)}")
+    write_summary(resolve_path(output_path), summaries)
+    write_details(resolve_path(details_output_path), details)
+    write_latency_report(resolve_path(latency_output_path), details)
+    print(f"ablation results saved: {resolve_path(output_path)}")
+    print(f"ablation details saved: {resolve_path(details_output_path)}")
+    print(f"latency report saved: {resolve_path(latency_output_path)}")
 
 
 if __name__ == "__main__":

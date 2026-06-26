@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class RawDocument(BaseModel):
@@ -17,7 +17,7 @@ class RawDocument(BaseModel):
 class TextChunk(BaseModel):
     chunk_id: str
     doc_id: str
-    source_file: str
+    source_file: str = Field(validation_alias=AliasChoices("source_file", "file_name"))
     page: int | None = None
     page_start: int | None = None
     page_end: int | None = None

@@ -36,6 +36,7 @@ def main() -> None:
         device=emb_cfg.get("device", "auto"),
         batch_size=emb_cfg.get("batch_size", 16),
         chroma_batch_size=args.chroma_batch_size or emb_cfg.get("chroma_batch_size", 512),
+        allow_embedding_fallback=emb_cfg.get("allow_fallback", False),
     )
     retriever.build_index(chunks)  # type: ignore[arg-type]
     print(f"Dense index saved: {persist_dir}, chunks={len(chunks)}, embedding_backend={retriever.embedder.backend}")

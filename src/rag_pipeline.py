@@ -28,6 +28,7 @@ class RAGPipeline:
         paths = self.config["paths"]
         self.bm25: BM25Retriever | None = None
         self.dense: DenseRetriever | None = None
+        self.reranker: Reranker | None = None
 
         bm25_path = resolve_path(paths["bm25_index_path"])
         if load_bm25 and bm25_path.exists():
@@ -41,6 +42,7 @@ class RAGPipeline:
                 device=emb_cfg.get("device", "auto"),
                 batch_size=emb_cfg.get("batch_size", 16),
                 chroma_batch_size=emb_cfg.get("chroma_batch_size", 512),
+                allow_embedding_fallback=emb_cfg.get("allow_fallback", False),
             )
 
         llm_cfg = self.config.get("llm", {})
@@ -56,6 +58,9 @@ class RAGPipeline:
                 load_in_4bit=llm_cfg.get("load_in_4bit", True),
                 temperature=llm_cfg.get("temperature", 0.2),
                 max_tokens=llm_cfg.get("max_tokens", 1024),
+                strict=llm_cfg.get("strict", False),
+                reasoning_effort=llm_cfg.get("reasoning_effort"),
+                thinking_enabled=llm_cfg.get("thinking_enabled", False),
             )
 
     def retrieve(self, question: str, retrieval_mode: str = "hybrid", top_k: int = 30) -> list[RetrievalResult]:
@@ -89,6 +94,7 @@ class RAGPipeline:
         use_reranker: bool = True,
         top_k: int = 30,
         final_top_n: int = 5,
+        persist_outputs: bool = True,
     ) -> RAGAnswer:
         started_at = time.perf_counter()
         created_at = datetime.now().isoformat(timespec="seconds")
@@ -99,52 +105,49 @@ class RAGPipeline:
 
         if use_reranker and initial_results:
             reranker_cfg = self.config.get("reranker", {})
-            reranker = Reranker(
-                model_name=reranker_cfg.get("model_name", "BAAI/bge-reranker-v2-m3"),
-                fallback_model_name=reranker_cfg.get("fallback_model_name", "BAAI/bge-reranker-base"),
-                device=reranker_cfg.get("device", "auto"),
-                enabled=reranker_cfg.get("enabled", True),
-            )
-            final_results = reranker.rerank(question, initial_results, top_n=final_top_n)
-            used_reranker = reranker.enabled
+            if self.reranker is None:
+                self.reranker = Reranker(
+                    model_name=reranker_cfg.get("model_name", "BAAI/bge-reranker-v2-m3"),
+                    fallback_model_name=reranker_cfg.get("fallback_model_name", "BAAI/bge-reranker-base"),
+                    device=reranker_cfg.get("device", "auto"),
+                    enabled=reranker_cfg.get("enabled", True),
+                    allow_fallback=reranker_cfg.get("allow_fallback", False),
+                )
+            final_results = self.reranker.rerank(question, initial_results, top_n=final_top_n)
+            used_reranker = self.reranker.enabled
 
         if is_investment_advice_question(question):
             final_results = []
 
         prompt = build_rag_prompt(question, final_results)
         if self.llm is None:
-            self.llm = LLMClient(provider="openai_compatible")
-        answer = self.llm.generate(prompt, question=question, citations=final_results)
+            self.llm = LLMClient(provider="openai_compatible", strict=True)
+        generation = self.llm.generate(prompt, question=question, citations=final_results)
+        answer = generation.text
         latency_seconds = time.perf_counter() - started_at
         emb_cfg = self.config.get("embedding", {})
         reranker_cfg = self.config.get("reranker", {})
-        llm_cfg = self.config.get("llm", {})
-        local_client = getattr(self.llm, "local_client", None)
-        if local_client is not None:
-            adapter = getattr(local_client, "adapter_path", None)
-            generator_model = f"{local_client.base_model}+{adapter}" if adapter else local_client.base_model
-        elif getattr(self.llm, "client", None) is not None:
-            generator_model = getattr(self.llm, "model", "openai_compatible")
-        else:
-            generator_model = "mock"
-        save_qa_result(
-            question_id=question_id,
-            question=question,
-            answer=answer,
-            citations=final_results,
-            retrieved_chunks=initial_results,
-            retrieval_top_k=top_k,
-            embedding_model=emb_cfg.get("model_name", "BAAI/bge-m3"),
-            reranker_model=reranker_cfg.get("model_name", "BAAI/bge-reranker-v2-m3") if use_reranker else "disabled",
-            generator_model=str(generator_model),
-            latency_seconds=latency_seconds,
-            created_at=created_at,
-        )
-        save_retrieved_contexts(
-            question_id=question_id,
-            question=question,
-            retrieved_chunks=initial_results,
-        )
+        generation_payload = generation.to_dict()
+        if persist_outputs:
+            save_qa_result(
+                question_id=question_id,
+                question=question,
+                answer=answer,
+                citations=final_results,
+                retrieved_chunks=initial_results,
+                retrieval_top_k=top_k,
+                embedding_model=emb_cfg.get("model_name", "BAAI/bge-m3"),
+                reranker_model=reranker_cfg.get("model_name", "BAAI/bge-reranker-v2-m3") if use_reranker else "disabled",
+                generator_model=generation.actual_model,
+                generation=generation_payload,
+                latency_seconds=latency_seconds,
+                created_at=created_at,
+            )
+            save_retrieved_contexts(
+                question_id=question_id,
+                question=question,
+                retrieved_chunks=initial_results,
+            )
         return RAGAnswer(
             question=question,
             answer=answer,
@@ -156,6 +159,7 @@ class RAGPipeline:
                 "initial_result_count": len(initial_results),
                 "latency_seconds": round(latency_seconds, 4),
                 "created_at": created_at,
+                "generation": generation_payload,
                 "retrieved_chunks": [item.model_dump() for item in initial_results],
             },
         )

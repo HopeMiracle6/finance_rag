@@ -21,13 +21,15 @@ class Reranker:
         fallback_model_name: str = "BAAI/bge-reranker-base",
         device: str = "auto",
         enabled: bool = True,
+        allow_fallback: bool = False,
     ) -> None:
         self.model_name = model_name
         self.fallback_model_name = fallback_model_name
         self.device = None if device == "auto" else device
         self.enabled = enabled
+        self.allow_fallback = allow_fallback
         self.model = None
-        self.backend = "keyword_overlap"
+        self.backend = "unloaded" if enabled else "disabled"
         if enabled:
             self._load_model()
 
@@ -35,7 +37,11 @@ class Reranker:
         allow_download = os.getenv("FINANCE_RAG_ALLOW_MODEL_DOWNLOAD", "0") == "1"
         for name in [self.model_name, self.fallback_model_name]:
             if not allow_download and not Path(name).exists():
-                logger.warning(f"未启用模型下载且本地不存在 reranker: {name}，使用 keyword_overlap fallback")
+                message = f"未启用模型下载且本地不存在 reranker: {name}"
+                if not self.allow_fallback:
+                    raise FileNotFoundError(message)
+                logger.warning(f"{message}，使用 keyword_overlap fallback")
+                self.backend = "keyword_overlap"
                 continue
             try:
                 from FlagEmbedding import FlagReranker
@@ -45,7 +51,10 @@ class Reranker:
                 logger.info(f"已加载 reranker 模型: {name}")
                 return
             except Exception as exc:
+                if not self.allow_fallback:
+                    raise RuntimeError(f"reranker 模型加载失败，且已禁用 fallback: {name}") from exc
                 logger.warning(f"reranker 模型加载失败 {name}: {exc}")
+                self.backend = "keyword_overlap"
 
     def rerank(self, query: str, results: list[RetrievalResult], top_n: int = 5) -> list[RetrievalResult]:
         if not results:
@@ -60,6 +69,8 @@ class Reranker:
                 if isinstance(scores, float):
                     scores = [scores]
             except Exception as exc:
+                if not self.allow_fallback:
+                    raise RuntimeError("FlagEmbedding reranker 计算失败，且已禁用 fallback") from exc
                 logger.warning(f"FlagEmbedding reranker 计算失败，使用 keyword_overlap fallback: {exc!r}")
                 self.backend = "keyword_overlap"
                 scores = [self._keyword_overlap_score(query, result.text) for result in results]

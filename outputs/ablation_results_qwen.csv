@@ -1,0 +1,4 @@
+﻿setting,top_k,generator,use_reranker,generator_model,question_count,faithfulness,answer_relevancy,context_precision,context_recall,average_latency_seconds
+dense,30,qwen,False,Qwen/Qwen3-4B+D:\LLaMA-Factory\saves\qwen3-4b\lora\finance_sft_json,40,0.4708,0.4708,0.3,0.7417,31.688
+dense_reranker,30,qwen,True,Qwen/Qwen3-4B+D:\LLaMA-Factory\saves\qwen3-4b\lora\finance_sft_json,40,0.4792,0.4792,0.365,0.8938,32.1128
+hybrid_reranker,30,qwen,True,Qwen/Qwen3-4B+D:\LLaMA-Factory\saves\qwen3-4b\lora\finance_sft_json,40,0.5625,0.5625,0.365,0.8938,28.4964

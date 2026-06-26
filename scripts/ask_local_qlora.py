@@ -33,6 +33,12 @@ def main() -> None:
 
     print(f"问题：{answer.question}\n")
     print(f"回答：\n{answer.answer}\n")
+    generation = answer.metadata.get("generation", {})
+    print(
+        "生成后端："
+        f"{generation.get('actual_provider')} / {generation.get('actual_model')} / "
+        f"{generation.get('backend')} / fallback={generation.get('fallback_used')}"
+    )
     print("引用来源：")
     if not answer.citations:
         print("- 无")

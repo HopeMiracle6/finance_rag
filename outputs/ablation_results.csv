@@ -1,4 +1,0 @@
-﻿setting,top_k,use_reranker,use_lora,generator_model,question_count,faithfulness,answer_relevancy,context_precision,context_recall,average_latency_seconds
-baseline,30,False,False,Qwen/Qwen3-4B,40,0.0,0.0646,0.1,0.0,18.7035
-with_reranker,30,True,False,Qwen/Qwen3-4B,40,0.0333,0.0896,0.115,0.0417,10.9209
-with_lora,30,True,True,Qwen/Qwen3-4B+D:/LLaMA-Factory/saves/qwen3-4b/lora/finance_sft_json,40,0.1125,0.1125,0.115,0.1417,29.5828
